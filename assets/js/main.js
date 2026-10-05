@@ -59,27 +59,63 @@
     for (let k = 0; k < 20; k++) { const m = (lo + hi) / 2; if (ok(m)) hi = m; else lo = m; }
     return hi * 1.03;
   }
-  const tileClip = (s, cx, cy) => "polygon(" + tilePts(s, cx, cy).map(p => p[0].toFixed(1) + "px " + p[1].toFixed(1) + "px").join(",") + ")";
+  const tilePath = (s, cx, cy) => "M" + tilePts(s, cx, cy).map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join("L") + "Z";
 
   /* Плитка-окно: кадр открывается из маленькой плитки до полного размера.
-     at — центр плитки в долях кадра (или функция), from — высота стартовой плитки в долях высоты кадра */
+     at — центр плитки в долях кадра (или функция), from — высота стартовой плитки в долях высоты кадра.
+     Поверх кадра лежит «вуаль» цвета фона с вырезом-плиткой (SVG, even-odd): в кадрах анимации меняется
+     только этот вектор, фото остаётся в своём слое — не перерисовывается и не декодируется заново
+     (clip-path по многоугольнику перерисовывал фото в каждом кадре). */
+  const SVGNS = "http://www.w3.org/2000/svg";
+  const bgOf = node => {
+    for (let n = node; n && n !== document.documentElement; n = n.parentElement) {
+      const c = getComputedStyle(n).backgroundColor;
+      if (c && c !== "transparent" && !/rgba\(.*,\s*0\)$/.test(c)) return c;
+    }
+    return getComputedStyle(document.body).backgroundColor;
+  };
   function aperture(el, opts) {
     const o = Object.assign({ from: .2, at: [.5, .5], inner: null, vars: {} }, opts);
     const st = { p: 0 };
-    const apply = () => {
-      if (st.p >= 1) { el.style.clipPath = "none"; return; }
+    const veil = document.createElementNS(SVGNS, "svg");
+    veil.setAttribute("class", "ap-veil");
+    veil.setAttribute("aria-hidden", "true");
+    veil.setAttribute("preserveAspectRatio", "none");
+    const path = document.createElementNS(SVGNS, "path");
+    path.setAttribute("fill-rule", "evenodd");
+    veil.appendChild(path);
+    if (el.tagName === "IMG") el.after(veil); else el.appendChild(veil);
+    let g = null, dead = false, hidden = false;
+    // размеры кадра, цвет фона вокруг и масштаб «плитка накрывает кадр» — на refresh, а не в каждом кадре
+    const measure = () => {
       const w = el.offsetWidth, h = el.offsetHeight;
-      if (!w || !h) return;
+      if (!w || !h) { g = null; return; }
       const at = typeof o.at === "function" ? o.at() : o.at;
-      const cx = w * at[0], cy = h * at[1];
-      const s0 = Math.max(h * o.from, 28) / 140;
-      el.style.clipPath = tileClip(s0 + (coverScale(w, h, cx, cy) - s0) * st.p, cx, cy);
+      const cx = w * at[0], cy = h * at[1], s0 = Math.max(h * o.from, 28) / 140;
+      g = { w, h, cx, cy, s0, s1: coverScale(w, h, cx, cy) };
+      veil.setAttribute("viewBox", "0 0 " + w + " " + h);
+      path.setAttribute("fill", bgOf(el.parentElement));
     };
-    apply();
-    ScrollTrigger.addEventListener("refresh", apply);
+    const apply = () => {
+      if (dead) return;
+      const done = st.p >= 1;
+      if (done !== hidden) { veil.style.display = done ? "none" : ""; hidden = done; }
+      if (done) return;
+      if (!g) measure();
+      if (g) path.setAttribute("d", "M0 0H" + g.w + "V" + g.h + "H0Z" + tilePath(g.s0 + (g.s1 - g.s0) * st.p, g.cx, g.cy));
+    };
+    const onRefresh = () => { measure(); apply(); };
+    measure(); apply();
+    ScrollTrigger.addEventListener("refresh", onRefresh);
     const tl = gsap.timeline(Object.assign({ defaults: { ease: "expo.inOut", duration: 1.5 } }, o.vars));
     tl.to(st, { p: 1, onUpdate: apply }, 0);
-    if (o.inner) tl.fromTo(o.inner, { scale: 1.28 }, { scale: 1 }, 0);
+    if (o.inner) {
+      // фото на время раскрытия — отдельный слой: масштаб 1.28 → 1 делает видеокарта
+      tl.fromTo(o.inner, { scale: 1.28 }, { scale: 1 }, 0);
+      tl.eventCallback("onStart", () => { o.inner.style.willChange = "transform"; });
+      tl.eventCallback("onComplete", () => { o.inner.style.willChange = ""; });
+    }
+    tl.dispose = () => { dead = true; ScrollTrigger.removeEventListener("refresh", onRefresh); veil.remove(); if (o.inner) o.inner.style.willChange = ""; };
     return tl;
   }
 
@@ -205,7 +241,9 @@
       tl.eventCallback("onComplete", () => splits.forEach(s => s.revert()));
     }
     tl.fromTo(".hero__tile", { scaleY: 0 }, { scaleY: 1, duration: 1.5, ease: "expo.inOut" }, 0)
-      .fromTo(".hero__render", { clipPath: "inset(100% 0% 0% 0%)", y: 50 }, { clipPath: "inset(0% 0% 0% 0%)", y: 0, duration: 1.9, ease: "expo.inOut" }, .3)
+      .fromTo(".hero__render", { clipPath: "inset(100% 0% 0% 0%)", y: 50 }, { clipPath: "inset(0% 0% 0% 0%)", y: 0, duration: 1.9, ease: "expo.inOut",
+        onStart: () => gsap.set(".hero__render", { willChange: "transform" }),
+        onComplete: () => gsap.set(".hero__render", { clearProps: "clipPath,willChange" }) }, .3)
       .fromTo(".hero [data-fade]", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.1, stagger: .12 }, 1.1)
       .fromTo(".hero__label span", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: .9, stagger: .12, ease: "expo.inOut" }, 1.6)
       .fromTo(".medal", { scale: .2, rotate: -120, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 1.3, ease: "back.out(1.6)" }, 1.5);
@@ -226,17 +264,20 @@
   function initRoute() {
     const route = $(".route");
     if (!route) return;
-    const svg = $(".route__svg", route), base = $(".route__base", route), line = $(".route__line", route);
+    const svg = $(".route__svg", route), base = $(".route__base", route), line = $(".route__line", route), bar = $(".route__bar", route);
     const stops = $$(".stop", route), marks = stops.map(s => $(".stop__mark", s));
-    let samples = [], total = 1, markY = [], setOff = null;
+    let samples = [], total = 1, markY = [], setOff = null, setBar = null;
+    let routeTop = 0, routeH = 0, barTop = 0, barH = 1, desk = true;
 
     const build = () => {
       const r = route.getBoundingClientRect();
       if (!r.width) return;
       const pts = marks.map(m => { const b = m.getBoundingClientRect(); return [b.left + b.width / 2 - r.left, b.top + b.height / 2 - r.top]; });
       const f = n => n.toFixed(1);
+      routeTop = r.top + window.scrollY; routeH = r.height;
+      desk = window.matchMedia(DESK).matches;
       let d;
-      if (window.matchMedia(DESK).matches) {
+      if (desk) {
         // лестница: от левого края к первой метке, дальше S-кривыми вниз-вправо
         d = "M0 " + f(pts[0][1]) + " L" + f(pts[0][0]) + " " + f(pts[0][1]);
         for (let i = 1; i < pts.length; i++) {
@@ -245,6 +286,9 @@
         }
       } else {
         d = "M" + f(pts[0][0]) + " " + f(Math.max(0, pts[0][1] - 40)) + pts.map(p => " L" + f(p[0]) + " " + f(p[1])).join("");
+        // телефон: маршрут прямой — рисуем его полосой с transform, без перерисовки SVG
+        barTop = Math.max(0, pts[0][1] - 40); barH = Math.max(1, pts[pts.length - 1][1] - barTop);
+        if (bar) Object.assign(bar.style, { left: f(pts[0][0] - 1.5) + "px", top: f(barTop) + "px", height: f(barH) + "px" });
       }
       svg.setAttribute("viewBox", "0 0 " + f(r.width) + " " + f(r.height));
       base.setAttribute("d", d);
@@ -257,9 +301,9 @@
     const lengthAt = y => { let L = 0; for (const [sy, sl] of samples) { if (sy <= y + .5) L = sl; else break; } return L; };
     const update = () => {
       if (!setOff) return;
-      const r = route.getBoundingClientRect();
-      const y = window.innerHeight * .64 - r.top;
-      setOff(1 - (y >= r.height ? total : lengthAt(y)) / total);
+      const y = window.scrollY + window.innerHeight * .64 - routeTop;
+      if (desk) setOff(1 - (y >= routeH ? total : lengthAt(y)) / total);
+      else if (setBar) setBar(Math.min(1, Math.max(0, (y - barTop) / barH)));
       stops.forEach((s, i) => s.classList.toggle("is-reached", y >= markY[i] - 6));
     };
 
@@ -269,6 +313,7 @@
 
     gsap.set(line, { strokeDashoffset: 1 });
     setOff = gsap.quickTo(line, "strokeDashoffset", { duration: .6, ease: "power3.out" });
+    if (bar) { gsap.set(bar, { scaleY: 0 }); setBar = gsap.quickTo(bar, "scaleY", { duration: .6, ease: "power3.out" }); }
     ScrollTrigger.create({ trigger: route, start: "top bottom", end: "bottom top", onUpdate: update, onRefresh: () => { build(); update(); } });
 
     $$(".stop__media", route).forEach(m => aperture(m, {
@@ -358,14 +403,14 @@
     });
 
     mm.add(MOB, () => {
-      $$(".adv", txtCol).forEach(a => {
-        const m = $(".adv__media", a), img = $("img", m);
-        const st = { trigger: a, start: "top 92%", end: "top 45%", scrub: true };
-        gsap.fromTo(m, { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", ease: "none", scrollTrigger: st });
-        if (img) gsap.fromTo(img, { scale: 1.25 }, { scale: 1, ease: "none", scrollTrigger: Object.assign({}, st) });
+      // фото карточки открывается плиткой один раз (раньше шторка шла за скроллом и перерисовывала фото в каждом кадре)
+      const tls = $$(".adv", txtCol).map(a => {
+        const m = $(".adv__media", a);
         gsap.from($(".adv__body", a).children, { y: 24, opacity: 0, stagger: .07, duration: 1, ease: "expo.out",
           scrollTrigger: { trigger: a, start: "top 72%", once: true } });
+        return aperture(m, { from: .22, inner: $("img", m), vars: { scrollTrigger: { trigger: m, start: "top 85%", once: true } } });
       });
+      return () => tls.forEach(t => t.dispose());
     });
   }
 
@@ -377,6 +422,7 @@
     const mapEl = $("#map");
     if (!mapEl || !window.BrandMap) return;
     BrandMap.init(mapEl, { list: ".location__legend [data-key]" });
+    if ("IntersectionObserver" in window) new IntersectionObserver(([e]) => mapEl.classList.toggle("is-offscreen", !e.isIntersecting)).observe(mapEl);
   }
   function mapMotion() {
     const mapEl = $("#map");
@@ -449,7 +495,8 @@
     if (!tabs.length || tabs.length !== panels.length) return;
     sec.classList.add("reviews--tabs");
     let cur = 0, auto = MOTION, bar = null, visible = false, hold = false;
-    const setP = (i, v) => tabs[i].style.setProperty("--p", v);
+    const fills = tabs.map(t => { const b = $(".rtab__bar", t); let f = $("i", b); if (!f) { f = document.createElement("i"); b.appendChild(f); } return f; });
+    const setP = (i, v) => { fills[i].style.transform = "scaleX(" + v + ")"; };
     const sync = () => { if (bar) (visible && !hold) ? bar.resume() : bar.pause(); };
 
     function reveal(i) {
@@ -633,11 +680,18 @@
   /* ---------- ФОРМА: фото открывается плиткой по скроллу, панель подъезжает ---------- */
   function initBooking(mm) {
     const photo = $(".booking__photo");
-    if (photo) aperture(photo, { from: .14, at: [.3, .55], inner: $("img", photo),
-      vars: { defaults: { ease: "none", duration: 1 }, scrollTrigger: { trigger: ".booking", start: "top 92%", end: "top 12%", scrub: true } } });
+    const img = photo && $("img", photo);
     mm.add(DESK, () => {
+      const tl = photo && aperture(photo, { from: .14, at: [.3, .55], inner: img,
+        vars: { defaults: { ease: "none", duration: 1 }, scrollTrigger: { trigger: ".booking", start: "top 92%", end: "top 12%", scrub: true } } });
       gsap.fromTo(".booking__panel", { y: 120 }, { y: 0, ease: "none",
         scrollTrigger: { trigger: ".booking", start: "top bottom", end: "top 15%", scrub: true } });
+      return () => { if (tl) tl.dispose(); };
+    });
+    mm.add(MOB, () => {
+      const tl = photo && aperture(photo, { from: .14, at: [.3, .55], inner: img,
+        vars: { scrollTrigger: { trigger: photo, start: "top 82%", once: true } } });
+      return () => { if (tl) tl.dispose(); };
     });
     gsap.from(".form > *", { y: 20, opacity: 0, stagger: .06, duration: 1, ease: "expo.out",
       scrollTrigger: { trigger: ".form", start: "top 88%", once: true } });
