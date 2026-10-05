@@ -85,7 +85,10 @@
     path.setAttribute("fill-rule", "evenodd");
     veil.appendChild(path);
     if (el.tagName === "IMG") el.after(veil); else el.appendChild(veil);
-    let g = null, dead = false, hidden = false;
+    let g = null, dead = false, hidden = false, shut = null;
+    // вуаль шире кадра на AP_PAD с каждой стороны (см. .ap-veil): её сглаженный край уходит за обрезку кадра,
+    // иначе на телефонах по контуру закрытого кадра просвечивает тонкая рамка
+    const AP_PAD = 3;
     // размеры кадра, цвет фона вокруг и масштаб «плитка накрывает кадр» — на refresh, а не в каждом кадре
     const measure = () => {
       const w = el.offsetWidth, h = el.offsetHeight;
@@ -93,16 +96,19 @@
       const at = typeof o.at === "function" ? o.at() : o.at;
       const cx = w * at[0], cy = h * at[1], s0 = Math.max(h * o.from, 28) / 140;
       g = { w, h, cx, cy, s0, s1: coverScale(w, h, cx, cy) };
-      veil.setAttribute("viewBox", "0 0 " + w + " " + h);
+      veil.setAttribute("viewBox", -AP_PAD + " " + -AP_PAD + " " + (w + AP_PAD * 2) + " " + (h + AP_PAD * 2));
       path.setAttribute("fill", bgOf(el.parentElement));
     };
     const apply = () => {
       if (dead) return;
+      // пока раскрытие не началось, фото под вуалью скрыто — просвечивать по краю нечему
+      const closed = st.p <= 0;
+      if (o.inner && closed !== shut) { o.inner.style.visibility = closed ? "hidden" : ""; shut = closed; }
       const done = st.p >= 1;
       if (done !== hidden) { veil.style.display = done ? "none" : ""; hidden = done; }
       if (done) return;
       if (!g) measure();
-      if (g) path.setAttribute("d", "M0 0H" + g.w + "V" + g.h + "H0Z" + tilePath(g.s0 + (g.s1 - g.s0) * st.p, g.cx, g.cy));
+      if (g) path.setAttribute("d", "M" + -AP_PAD + " " + -AP_PAD + "H" + (g.w + AP_PAD) + "V" + (g.h + AP_PAD) + "H" + -AP_PAD + "Z" + tilePath(g.s0 + (g.s1 - g.s0) * st.p, g.cx, g.cy));
     };
     const onRefresh = () => { measure(); apply(); };
     measure(); apply();
@@ -115,7 +121,7 @@
       tl.eventCallback("onStart", () => { o.inner.style.willChange = "transform"; });
       tl.eventCallback("onComplete", () => { o.inner.style.willChange = ""; });
     }
-    tl.dispose = () => { dead = true; ScrollTrigger.removeEventListener("refresh", onRefresh); veil.remove(); if (o.inner) o.inner.style.willChange = ""; };
+    tl.dispose = () => { dead = true; ScrollTrigger.removeEventListener("refresh", onRefresh); veil.remove(); if (o.inner) { o.inner.style.willChange = ""; o.inner.style.visibility = ""; } };
     return tl;
   }
 

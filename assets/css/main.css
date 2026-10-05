@@ -126,7 +126,8 @@ main, .footer { overflow-x: clip; }
 .split-line-mask { position: relative; width: fit-content; padding: .08em 0 .16em; margin: -.08em 0 -.16em; }
 .split-line { width: fit-content; }
 .split-word-mask { padding: .04em .16em .18em 0; margin: -.04em -.16em -.18em 0; }
-.ap-veil { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; will-change: transform; }
+/* вуаль раскрытия плиткой шире кадра на 3 px (AP_PAD в main.js): край вуали — за обрезкой кадра, без тонкой рамки по контуру */
+.ap-veil { position: absolute; left: -3px; top: -3px; width: calc(100% + 6px); max-width: none; height: calc(100% + 6px); pointer-events: none; will-change: transform; }
 .wipe {
   position: absolute; inset: .06em 0 .1em; z-index: 1;
   background: var(--wipe);
@@ -338,7 +339,10 @@ main, .footer { overflow-x: clip; }
   .hero__visual { --bleed: calc((100vw - var(--maxw)) / 2 + var(--gutter)); }
 }
 
-/* ---------- Как проходит экскурсия: маршрут ---------- */
+/* ---------- Урбан-тур: как проходит экскурсия, маршрут ---------- */
+.steps__head { display: grid; gap: 22px; }
+.steps__head .eyebrow { margin-bottom: 0; }
+.steps__lead { max-width: 46ch; }
 .route { position: relative; margin-top: 48px; }
 .route__svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
 .route__base { fill: none; stroke: var(--gray); stroke-width: 1.5; stroke-dasharray: 2 7; stroke-linecap: round; }
@@ -362,12 +366,18 @@ main, .footer { overflow-x: clip; }
 .stop.is-reached .stop__mark { transform: scale(1.08); }
 .stop__media { position: relative; overflow: hidden; aspect-ratio: 5 / 4; background: var(--paper-2); }
 .stop__media > img { width: 100%; height: 100%; object-fit: cover; }
-.stop__media--plan { background: #fff; }
-.stop__media--plan > img { object-fit: contain; padding: 6%; }
-.stop__text { font-size: 19px; line-height: 1.42; font-weight: 300; max-width: 30ch; }
-.stop--gift .stop__text { font-family: var(--font-accent); font-style: italic; font-weight: 400; font-size: 24px; line-height: 1.2; color: var(--orange-ink); }
-.route__cta { position: relative; z-index: 1; margin-top: 48px; }
-@media (max-width: 479px) { .route__cta .btn { width: 100%; } .route__cta .btn__label { flex: 1; } }
+/* окно с Волгой — «картина в раме»: кадр всегда вертикальный, чтобы окно читалось целиком */
+.stop__media--frame { aspect-ratio: 4 / 5; background: #010101; }
+.stop__title { margin-top: 4px; font-family: var(--font-accent); font-style: italic; font-weight: 400; font-size: 26px; line-height: 1.1; }
+.stop__text { margin-top: -6px; font-size: 19px; line-height: 1.42; font-weight: 300; max-width: 30ch; }
+.stop__gift { font-family: var(--font-accent); font-style: italic; font-weight: 400; font-size: 22px; line-height: 1.2; color: var(--orange-ink); max-width: 20ch; }
+.route__cta { position: relative; z-index: 1; margin-top: 48px; display: grid; gap: 16px; justify-items: start; }
+.route__note { display: flex; align-items: center; gap: 10px; max-width: 34ch; font-size: 14px; line-height: 1.4; color: var(--ink-2); }
+.route__note .icon { width: 22px; height: 22px; color: var(--orange-ink); }
+@media (max-width: 479px) { .route__cta { justify-items: stretch; } .route__cta .btn { width: 100%; } .route__cta .btn__label { flex: 1; } }
+
+/* лекция: в кадре — спикер и экран с тремя домами */
+.stop__media--lecture > img { object-position: 30% 62%; }
 
 /* Книга-подарок: обложка в фирменных цветах */
 .stop__media--book { display: grid; place-items: center; background: var(--paper-2); }
@@ -387,13 +397,13 @@ main, .footer { overflow-x: clip; }
 
 @media (min-width: 1024px) {
   .route {
-    --stair: clamp(96px, 8.6vw, 150px);
+    --stair: clamp(72px, 6.6vw, 116px);
     margin-top: 80px;
     display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: 24px;
   }
   .route__list {
     grid-column: 1 / -1; grid-row: 1;
-    grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 24px; row-gap: 0;
+    grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: clamp(16px, 1.7vw, 24px); row-gap: 0;
     padding-left: 0; align-items: start;
   }
   /* лестница: каждая остановка ниже предыдущей, маршрут спускается слева направо */
@@ -401,11 +411,16 @@ main, .footer { overflow-x: clip; }
   .stop:nth-child(2) { margin-top: var(--stair); }
   .stop:nth-child(3) { margin-top: calc(var(--stair) * 2); }
   .stop:nth-child(4) { margin-top: calc(var(--stair) * 3); }
+  .stop:nth-child(5) { margin-top: calc(var(--stair) * 4); }
   .stop__mark { left: auto; right: -22px; width: 44px; height: 57px; }
   .stop__media { aspect-ratio: 4 / 5; }
-  .stop__text { font-size: clamp(17px, .5vw + 12px, 20px); }
-  .stop--gift .stop__text { font-size: clamp(22px, .8vw + 14px, 28px); }
-  .route__cta { grid-column: 1 / 7; grid-row: 1; align-self: end; margin: 0; padding: 0 0 6px; }
+  .stop__title { font-size: clamp(22px, .6vw + 15px, 28px); }
+  .stop__text { font-size: clamp(16px, .4vw + 12px, 19px); }
+  .stop__gift { font-size: clamp(19px, .5vw + 13px, 24px); }
+  .route__cta { grid-column: 1 / 6; grid-row: 1; align-self: end; margin: 0; padding: 0 0 6px; }
+  .steps__head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: 24px; row-gap: 24px; align-items: end; }
+  .steps__head .eyebrow { grid-column: 1 / -1; }
+  .steps__lead { padding-bottom: .4em; }
   .route__line { display: inline; }
   .route__bar { display: none; }
   .js:not(.motion-off) .route__svg { will-change: transform; }
@@ -494,19 +509,8 @@ main, .footer { overflow-x: clip; }
 .cell__title .icon { width: 22px; height: 22px; color: var(--orange); }
 @media (hover: hover) { .cell:hover .cell__media img { transform: scale(1.05); } }
 
-/* Паркинг: схема трёх уровней вместо фото */
-.parking { background: var(--green); color: var(--paper); }
-.parking__levels { position: absolute; inset: 14% 8% 14% 8%; display: grid; grid-template-rows: repeat(3, 1fr); }
-.parking__levels i {
-  display: flex; align-items: center;
-  border-top: 1px solid var(--line-inv);
-  font-style: normal; font-family: var(--font-accent); font-size: clamp(22px, 2vw, 34px); line-height: 1;
-  background-image: repeating-linear-gradient(90deg, transparent 0 26px, rgba(244, 243, 240, .2) 26px 27px);
-  background-size: 64% 62%; background-position: 100% 50%; background-repeat: no-repeat;
-}
-.parking__levels i:last-child { border-bottom: 1px solid var(--line-inv); }
-.parking__car { position: absolute; left: 34%; top: calc(14% + (72% / 6) - 16px); width: 32px; height: 32px; color: var(--orange); transition: transform 1.6s var(--ease-inout); }
-@media (hover: hover) { .cell--parking:hover .parking__car { transform: translateX(120px); } }
+/* Паркинг: рендер, в кадре — вход к лифтам Дома Искусств и машины */
+.cell--parking .cell__media img { object-position: 50% 62%; }
 
 @media (min-width: 768px) {
   .bento { gap: 32px 20px; }
@@ -538,45 +542,35 @@ main, .footer { overflow-x: clip; }
 .adv { display: grid; align-content: start; background: var(--card); color: var(--ink); }
 .adv--green { background: var(--green); color: var(--paper); }
 .adv--gray { background: var(--paper-2); }
-.adv--orange { background: var(--orange); color: var(--ink); }
 .adv__media { position: relative; overflow: hidden; aspect-ratio: 16 / 10; }
 .adv__media img { width: 100%; height: 100%; object-fit: cover; }
-.adv__media--pattern { position: relative; background: var(--paper); }
 .adv__body { display: grid; gap: 14px; align-content: start; padding: 28px 20px 32px; }
 .adv__icon { width: 36px; height: 36px; color: var(--orange); }
 .adv--green .adv__icon { color: var(--orange-soft); }
-.adv--orange .adv__icon { color: var(--green-deep); }
 .adv__title { font-weight: 300; font-size: clamp(30px, 1.6vw + 18px, 52px); line-height: 1.04; letter-spacing: -.02em; }
 .adv__points { margin-top: 8px; display: grid; }
 .adv__points li { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 17px; }
 .adv__points li::before { content: ""; flex: none; width: 9px; height: 12px; margin-top: .45em; clip-path: var(--tile); background: var(--orange); }
 .adv--green .adv__points li { border-top-color: var(--line-inv); }
 .adv--green .adv__points li::before { background: var(--orange-soft); }
-.adv--orange .adv__points li { border-top-color: rgba(29, 29, 27, .22); }
-.adv--orange .adv__points li::before { background: var(--green-deep); }
 
-/* Фирменный паттерн брендбука: скошенные плитки 3 × 3 */
-.pattern {
-  position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 324 420'%3E%3Cpath fill='%232a4f50' d='M0 0h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%23ec663b' d='M108 0h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%232a4f50' d='M216 0h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%23bbbbba' d='M0 140h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%232a4f50' d='M108 140h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%23bbbbba' d='M216 140h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%23ec663b' d='M0 280h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%23bbbbba' d='M108 280h82l26 57v83h-81l-27-57z'/%3E%3Cpath fill='%23ec663b' d='M216 280h82l26 57v83h-81l-27-57z'/%3E%3C/svg%3E");
-  background-size: var(--p-w, 162px) auto;
-  background-repeat: repeat;
-}
 
 @media (min-width: 768px) {
   .split__col--txt { grid-template-columns: 1fr 1fr; gap: 20px; }
   .adv__body { padding: 36px 32px 40px; }
+  /* нечётная последняя карточка — на всю ширину: фото слева, текст справа */
+  .split:not(.split--on) .adv:last-child:nth-child(odd) { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+  .split:not(.split--on) .adv:last-child:nth-child(odd) .adv__media { aspect-ratio: auto; min-height: 280px; }
 }
 @media (min-width: 1024px) {
   .split { margin-top: 64px; }
   /* включается из JS, когда работает анимация: пин на экран, фото едут вверх, тексты вниз */
   .split--on .split__pin { position: relative; height: 100svh; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
   .split--on .split__media { display: block; position: relative; overflow: hidden; background: var(--paper-2); }
-  .split--on .split__col { height: 400%; display: flex; flex-direction: column; will-change: transform; }
+  .split--on .split__col { height: 300%; display: flex; flex-direction: column; will-change: transform; }
   .split--on .split__img { position: relative; flex: 1 1 0; overflow: hidden; }
   .split--on .split__img img { width: 100%; height: 100%; object-fit: cover; }
-  .split--on .split__img--pattern { background: var(--paper); }
-  .split--on .split__img--pattern .pattern { --p-w: 216px; }
+  .split--on .split__img--yard img { object-position: 85% 50%; } /* в вертикальном кадре — семья с ребёнком и стол под перголой */
   .split--on .split__text { position: relative; overflow: hidden; }
   .split--on .split__col--txt { flex-direction: column-reverse; gap: 0; max-width: none; margin: 0; padding: 0; }
   .split--on .adv { flex: 1 1 0; display: flex; align-items: center; }
@@ -920,6 +914,7 @@ main, .footer { overflow-x: clip; }
 /* ---------- Телефон: плотнее ритм внутри блоков ---------- */
 @media (max-width: 767.98px) {
   .eyebrow { margin-bottom: 16px; }
+  .steps__head { gap: 16px; }
   .route { margin-top: 36px; }
   .route__list { gap: 44px; }
   .route__cta { margin-top: 40px; }
