@@ -703,16 +703,20 @@
       scrollTrigger: { trigger: ".form", start: "top 88%", once: true } });
   }
 
-  /* ---------- ФУТЕР: слоган поднимается по словам, содержимое «догоняет» страницу ---------- */
-  function initFooter() {
+  /* ---------- ФУТЕР: слоган поднимается по словам, содержимое «догоняет» страницу (только десктоп) ---------- */
+  function initFooter(mm) {
     const slogan = $(".footer__slogan");
     if (slogan && window.SplitText) {
       const sp = SplitText.create(slogan, { type: "words", mask: "words", wordsClass: "split-word", aria: "none" });
       gsap.fromTo(sp.words, { yPercent: 110 }, { yPercent: 0, ease: "none", stagger: .15,
         scrollTrigger: { trigger: ".footer", start: "top bottom", end: "top 30%", scrub: true } });
     }
-    gsap.fromTo(".footer__inner", { yPercent: -12 }, { yPercent: 0, ease: "none",
-      scrollTrigger: { trigger: ".footer", start: "top bottom", end: "bottom bottom", scrub: true } });
+    // сдвиг в пикселях и меньше верхнего отступа подвала: в процентах от высоты (на телефоне подвал высокий
+    // из-за юридического текста) слоган уезжал под блок формы и обрезался
+    mm.add(DESK, () => {
+      gsap.fromTo(".footer__inner", { y: -72 }, { y: 0, ease: "none",
+        scrollTrigger: { trigger: ".footer", start: "top bottom", end: "bottom bottom", scrub: true } });
+    });
   }
 
   function debounce(fn, ms) { let t; return function () { clearTimeout(t); t = setTimeout(fn, ms); }; }
@@ -736,7 +740,7 @@
     const mm = gsap.matchMedia();
     heroScroll();
     // порядок важен: триггеры создаются сверху вниз, иначе ScrollTrigger неверно учитывает пин преимуществ
-    for (const init of [initHeadings, () => initHouses(mm), initFeatures, () => initAdvantages(mm), mapMotion, initTerms, () => initBooking(mm), initFooter]) {
+    for (const init of [initHeadings, () => initHouses(mm), initFeatures, () => initAdvantages(mm), mapMotion, initTerms, () => initBooking(mm), () => initFooter(mm)]) {
       await yieldTask();
       init();
     }

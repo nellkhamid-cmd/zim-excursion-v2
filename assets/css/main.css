@@ -437,9 +437,12 @@ main, .footer { overflow-x: clip; }
   --gap: 4px;
   position: relative; margin-top: 48px;
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap);
-  aspect-ratio: 16 / 10; overflow: hidden;
+  overflow: hidden;
 }
+/* высоту задаёт сама полоса (отступ в % от её ширины), а не растяжение сетки внутри блока с aspect-ratio:
+   WebKit на iPhone такие полосы не растягивал — панорама была пустой. Три полосы ≈ кадр 16 : 10 */
 .panorama__strip { position: relative; overflow: hidden; background: var(--green-deep); }
+.panorama__strip::before { content: ""; display: block; padding-top: 187.5%; }
 .panorama__strip img {
   position: absolute; top: 0; left: calc(var(--i) * (-100% - var(--gap)));
   width: calc(300% + var(--gap) * 2); max-width: none; height: 100%;
@@ -471,7 +474,8 @@ main, .footer { overflow-x: clip; }
 }
 @media (min-width: 1024px) {
   .houses__head { max-width: var(--maxw); }
-  .panorama { margin-top: 72px; aspect-ratio: 2.1 / 1; }
+  .panorama { margin-top: 72px; }
+  .panorama__strip::before { padding-top: 142.86%; } /* три полосы ≈ кадр 2,1 : 1 */
   .houses__rail { max-width: var(--maxw); margin: 96px auto 0; padding: 0 var(--gutter); }
   /* триптих «развешан» на разной высоте, каждый дом едет со своей скоростью */
   .houses__list {
