@@ -323,7 +323,7 @@
     ScrollTrigger.create({ trigger: route, start: "top bottom", end: "bottom top", onUpdate: update, onRefresh: () => { build(); update(); } });
 
     $$(".stop__media", route).forEach(m => aperture(m, {
-      from: .22, inner: $(".book", m) || $("img", m),
+      from: .22, inner: $("img", m),
       vars: { scrollTrigger: { trigger: m, start: "top 84%", once: true } }
     }));
   }

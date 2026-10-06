@@ -16,7 +16,7 @@
 <link rel="preload" href="assets/fonts/QuincyCF-Italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/img/hero-zim-m.webp" as="image" media="(max-width: 767px)" fetchpriority="high">
 <link rel="preload" href="assets/img/hero-zim.webp" as="image" media="(min-width: 768px)" fetchpriority="high">
-<link rel="stylesheet" href="assets/css/main.css?v=20261005-2">
+<link rel="stylesheet" href="assets/css/main.css?v=20261006">
 <script>
   document.documentElement.classList.replace('no-js','js');
   /* открыто из папки (file://): браузер не грузит шрифты по относительным путям — берём встроенные */
@@ -148,17 +148,8 @@
           </li>
           <li class="stop stop--gift">
             <span class="stop__mark" aria-hidden="true"><svg class="icon"><use href="#i-book-open-text"/></svg></span>
-            <div class="stop__media stop__media--book" data-aperture aria-hidden="true">
-              <div class="book">
-                <div class="book__cover">
-                  <span class="book__pattern"></span>
-                  <img class="book__logo" src="assets/img/logo-zim-white.svg" alt="" width="64" height="64">
-                  <span class="book__meta">
-                    <span class="book__title">Книга о проекте</span>
-                    <span class="book__edition">Лимитированный тираж</span>
-                  </span>
-                </div>
-              </div>
+            <div class="stop__media stop__media--book" data-aperture>
+              <img src="assets/img/step-book-m.webp" srcset="assets/img/step-book-m.webp 700w, assets/img/step-book.webp 1086w" sizes="(min-width: 1024px) 20vw, 88vw" width="700" height="933" alt="Лимитированная книга о проекте ЗИМ Галерея: обложка и разворот «Архитектурная концепция»" loading="lazy" decoding="async">
             </div>
             <h3 class="stop__title">Вопросы и&nbsp;подарок</h3>
             <p class="stop__text">Отвечаем на&nbsp;вопросы о&nbsp;планировках, сроках и&nbsp;условиях покупки.</p>
@@ -227,7 +218,7 @@
     <div class="container">
       <div class="bento">
         <div class="bento__intro">
-          <h2 class="h2" id="features-title" data-split>Такие квартиры лучше один раз увидеть <span class="accent">вживую</span></h2>
+          <h2 class="h2" id="features-title" data-split>Такие квартиры нужно увидеть <span class="accent">вживую</span></h2>
           <a class="btn" href="#form" data-scroll>
             <span class="btn__label">Записаться на экскурсию</span>
             <span class="btn__arrow" aria-hidden="true"><svg class="icon"><use href="#i-arrow-right"/></svg></span>
@@ -287,7 +278,7 @@
                   <li>Филиал Третьяковки напротив</li>
                   <li>Первая линия Ново-Садовой</li>
                   <li>Рядом набережная и музей «Самара Космическая»</li>
-                  <li>Школы, рестораны, театры в пешей доступности</li>
+                  <li>Школы, рестораны, Музей рока и&nbsp;Загородный парк в&nbsp;шаговой доступности</li>
                 </ul>
               </div>
             </article>
@@ -310,7 +301,7 @@
                 <svg class="icon adv__icon" aria-hidden="true"><use href="#i-paint-brush-broad"/></svg>
                 <h3 class="adv__title">Пространство</h3>
                 <ul class="adv__points">
-                  <li>Собственный выставочный зал</li>
+                  <li>Собственная художественная галерея</li>
                   <li>Арт-объект в зоне рецепции</li>
                   <li>Мозаичное панно в лифтовом холле</li>
                 </ul>
@@ -509,7 +500,7 @@
       </div>
       <div class="footer__col">
         <p class="footer__label">График</p>
-        <p>Пн–Пт 9:00–18:00</p>
+        <p>Пн–Пт 9:00–18:00, далее по&nbsp;запросу</p>
       </div>
       <div class="footer__col">
         <p class="footer__label">Телефон</p>
@@ -540,6 +531,6 @@
 <script src="assets/js/vendor/SplitText.min.js" defer></script>
 <script src="assets/js/vendor/lenis.min.js" defer></script>
 <script src="assets/js/map.js" defer></script>
-<script src="assets/js/main.js?v=20261005-2" defer></script>
+<script src="assets/js/main.js?v=20261006" defer></script>
 </body>
 </html>
